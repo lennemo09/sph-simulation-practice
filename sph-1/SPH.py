@@ -18,7 +18,7 @@ class SPH:
         r = np.sqrt(xs*xs + ys*ys + zs*zs)
 
         # Evaluated smoothing function
-        w = np.power((1 / h * (np.sqrt(np.pi))),3) * np.exp(-(r*r)/(h*h))
+        w = np.power((1 / (h * (np.sqrt(np.pi)))),3) * np.exp(-(r*r)/(h*h))
     
         return w
     
@@ -79,12 +79,13 @@ class SPH:
         h  : smoothing length
         """
         M = rs.shape[0] # Number of locations
-        dx, dy, dz = self.pairwise_seperations(rs, pos)
+        dxs, dys, dzs = self.pairwise_seperations(rs, pos)
 
-        # M x 1 vector of accelarations
-        rho = np.sum(m * self.W(dx, dy, dz, h), 1).reshape((M,1))
+        # M x 1 vector of densities
+        kernel = self.W(dxs, dys, dzs, h)
+        rhos = np.sum(m * kernel, 1).reshape((M,1))
 
-        return rho
+        return rhos
 
     def get_pressure(self,rhos : np.ndarray, k,n):
         """
