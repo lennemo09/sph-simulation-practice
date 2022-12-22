@@ -49,8 +49,8 @@ class SPH:
         ris : M x 3 matrix of positions
         rjs : M x 3 matrix of positions
         """
-        M = ri.shape(0)
-        N = rj.shape(0)
+        M = ri.shape[0]
+        N = rj.shape[0]
 
         # Positions ri = (x,y,z)
         rix = ri[:,0].reshape((M,1))
@@ -70,7 +70,7 @@ class SPH:
 
         return dxs, dys, dzs
 
-    def get_density(self,rs : np.ndarray, pos : np.ndarray, m):
+    def get_density(self,rs : np.ndarray, pos : np.ndarray, m, h):
         """
         Get density at sampled locations from SPH particle distributions.
         r  : M x 3 matrix of sampled locations
@@ -86,16 +86,16 @@ class SPH:
 
         return rho
 
-    def get_pressure(self,rho : np.ndarray, k,n):
+    def get_pressure(self,rhos : np.ndarray, k,n):
         """
         Pressure from density using the equation of state.
 
-        rho: vector of densities
-        k  : equation of state constant
-        n  : polytropic index
-        p  : pressure
+        rhos: vector of densities
+        k   : equation of state constant
+        n   : polytropic index
+        p   : pressure
         """
-        P = k * np.power(rho, 1 + 1/n)
+        P = k * np.power(rhos, 1 + 1/n)
 
         return P
 
@@ -119,26 +119,26 @@ class SPH:
         rho = self.get_density(pos, pos, m, h)
 
         # Get the pressures
-        P = self.get_pressure(rho, k, n)
+        P : np.ndarray = self.get_pressure(rho, k, n)
 
         # Get pairwise distances and gradients
         dx, dy, dz = self.pairwise_seperations(pos, pos)
         dWx, dWy, dWz = self.grad_W(dx, dy, dz, h)
 
         # Add Pressure contribution to accelarations
-        axs = -np.sum(m * (np.power(P/rho,2) + P.T/np.power(rho.T,2)) * dWx, 1).reshape((N,1))
-        ays = -np.sum(m * (np.power(P/rho,2) + P.T/np.power(rho.T,2)) * dWy, 1).reshape((N,1))
-        azs = -np.sum(m * (np.power(P/rho,2) + P.T/np.power(rho.T,2)) * dWz, 1).reshape((N,1))
+        axs = -np.sum(m * (P/np.power(rho,2) + P.T/np.power(rho.T,2)) * dWx, 1).reshape((N,1))
+        ays = -np.sum(m * (P/np.power(rho,2) + P.T/np.power(rho.T,2)) * dWy, 1).reshape((N,1))
+        azs = -np.sum(m * (P/np.power(rho,2) + P.T/np.power(rho.T,2)) * dWz, 1).reshape((N,1))
 
         # Stack accelaration components into a matrix
         a : np.ndarray = np.hstack((axs,ays,azs))
 
         # Add external potential force and viscosity
-        a : np.ndarray = a + (lmbda * pos - nu * vs)
+        a : np.ndarray = a + (-lmbda * pos - nu * vs)
 
         return a
 
-    
+
 
 
 
